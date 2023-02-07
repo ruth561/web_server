@@ -2,7 +2,8 @@ use std::{io::Read};
 use log::{debug, error, info, warn};
 use pavao::{SmbClient, SmbOpenOptions};
 use actix_web::{
-    get, App, HttpResponse, HttpServer, Responder, HttpRequest
+    get, post, App, HttpResponse, HttpServer, 
+    web, Responder, HttpRequest
 };
 
 mod nas;
@@ -21,8 +22,7 @@ async fn get_all_metadata(req: HttpRequest) -> impl Responder
             for dirent in dirents {
                 if dirent.name() == "#recycle" {
                     continue;
-                }
-                debug!("get_all_metadata | {:?}", dirent.name());                
+                }               
                 let path = format!("/{}/metadata.json", dirent.name());
                 if let Ok(metadata) = nas::get_file_s(&conn, &path) {
                     json[dirent.name()] = serde_json::from_str(&metadata).unwrap();
@@ -99,6 +99,14 @@ async fn get_file_data(req: HttpRequest) -> impl Responder
 }
 
 
+#[post("/api/seminars/update")]
+async fn file_upload(info: web::Bytes) -> String
+{
+    debug!("{:?}", info);
+    "thank you!".to_string()
+}
+
+
 /// Entry point
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -110,6 +118,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_all_metadata)
             .service(get_metadata)
             .service(get_file_data)
+            .service(file_upload)
     })
     .bind(("127.0.0.1", 5000))?
     .run()
